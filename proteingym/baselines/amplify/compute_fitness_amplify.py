@@ -1,6 +1,7 @@
 import argparse
 import os
 import pathlib
+import inspect
 from typing import List, Tuple, Optional
 
 import numpy as np
@@ -9,8 +10,95 @@ import torch
 from tqdm import tqdm
 
 
-# Minimal, sequence-only fitness computation using Hugging Face AMPLIFY models.
-# Mirrors compute_fitness_plm for ESM, adapted for AMPLIFY tokenization and API.
+# --- Small wrapper to normalize AMPLIFY model API differences ---
+class AmplifyForwardWrapper(torch.nn.Module):
+    """Unifies forward arg names across AMPLIFY variants (src vs input_ids).
+
+    - We only pass token ids (no attention mask) since batches are rectangular
+    - Exposes a `get_logits(input_ids)` method returning [B, T, V] tensor.
+    """
+
+    def __init__(self, model: torch.nn.Module):
+        super().__init__()
+        self.model = model
+        # Try to ensure non-packed inference
+        try:
+            if hasattr(self.model, "pack_sequences"):
+                self.model.pack_sequences = False
+            if hasattr(getattr(self.model, "module", None), "pack_sequences"):
+                self.model.module.pack_sequences = False
+            if hasattr(getattr(self.model, "config", None), "pack_sequences"):
+                self.model.config.pack_sequences = False
+        except Exception:
+            pass
+        # Inspect forward signature once to decide the expected arg names.
+        try:
+            sig = inspect.signature(model.forward)
+        except (ValueError, AttributeError):
+            sig = inspect.signature(model.__call__)
+
+        params = set(sig.parameters.keys())
+        if "src" in params and "input_ids" not in params:
+            self._ids_kw = "src"
+        else:
+            self._ids_kw = "input_ids"
+
+        # Discover optional flags we can propagate
+        self._supports_hidden = "output_hidden_states" in params
+        self._supports_attn = "output_attentions" in params
+        self._supports_pos = "position_ids" in params
+        self._supports_attn_mask = "attention_mask" in params
+
+        print(
+            f"AmplifyForwardWrapper defined with ids_kw='{self._ids_kw}', "
+            f"supports_hidden={self._supports_hidden}, supports_attn={self._supports_attn}, "
+            f"supports_pos={self._supports_pos}, supports_attn_mask={self._supports_attn_mask}"
+            f" for model {type(model).__name__}"
+            f"Base model API: {sig}"
+        )
+
+    @torch.no_grad()
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        output_hidden_states: bool = False,
+        output_attentions: bool = False,
+        position_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+    ):
+        kwargs = {self._ids_kw: input_ids}
+        if self._supports_hidden:
+            kwargs["output_hidden_states"] = output_hidden_states
+        if self._supports_attn:
+            kwargs["output_attentions"] = output_attentions
+        if self._supports_pos and position_ids is not None:
+            kwargs["position_ids"] = position_ids
+        if self._supports_attn_mask and attention_mask is not None:
+            kwargs["attention_mask"] = attention_mask
+        return self.model(**kwargs)
+
+    @torch.no_grad()
+    def get_logits(
+        self,
+        input_ids: torch.Tensor,
+        *,
+        position_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+    ) -> torch.Tensor:
+        out = self.forward(
+            input_ids,
+            output_hidden_states=False,
+            output_attentions=False,
+            position_ids=position_ids,
+            attention_mask=attention_mask,
+        )
+        if hasattr(out, "logits"):
+            out = out.logits
+        if isinstance(out, dict) and "logits" in out:
+            out = out["logits"]
+        if isinstance(out, (tuple, list)) and len(out) > 0 and isinstance(out[0], torch.Tensor):
+            out = out[0]
+        return out
 
 
 def create_parser():
@@ -28,58 +116,65 @@ def create_parser():
         choices=["bf16", "fp16", "fp32"],
         help="Data type for autocast computations: bf16 (default), fp16, or fp32.",
     )
-    parser.add_argument(
-        "--model-dtype",
-        type=str,
-        default="fp32",
-        choices=["fp32", "bf16", "fp16"],
-        help="Data type for model weights: fp32 (default), bf16, or fp16. Computations autocasted to bf16 by default.",
-    )
+    # removed --model-dtype; rely on autocast only
     parser.add_argument(
         "--model_name_or_path",
         type=str,
         nargs="+",
         required=True,
-        help="One or more HF model identifiers or local paths (e.g., chandar-lab/AMPLIFY_120M)",
+        help=(
+            "One or more HF model identifiers (for hub). For local, ignore this and provide "
+            "--local-checkpoint (.pt) and --local-config (config.yaml)."
+        ),
     )
+    parser.add_argument(
+        "--load-from",
+        type=str,
+        choices=["auto", "hub", "local"],
+        default="auto",
+        help=(
+            "Where to load models from: auto (default), hub, or local. For local, provide --local-checkpoint (.pt) "
+            "and --local-config (config.yaml)."
+        ),
+    )
+    parser.add_argument("--local-checkpoint", type=str, default=None, help="Path to local .pt checkpoint file")
+    parser.add_argument("--local-config", type=str, default=None, help="Path to local Hydra config.yaml file")
     parser.add_argument(
         "--use_auth_token",
         type=str,
         default=None,
-        help=(
-            "Hugging Face authentication token (string) or boolean flag passed to from_pretrained() methods. "
-            "Useful for accessing private models. If a string is provided, it is used as the token. "
-            "If None, no token is used. If set to 'True' (string), the token from the local Hugging Face CLI login is used."
-        ),
+        help=("Hugging Face auth token."),
     )
     parser.add_argument(
         "--revision",
         type=str,
         default=None,
-        help=(
-            "Optional Hugging Face revision (branch, tag, or commit) to load models/tokenizers from. "
-            "Useful when pinning a specific branch like 'main' or a commit SHA."
-        ),
+        help="Optional HF revision (branch, tag, or commit) to load models/tokenizers from.",
     )
     parser.add_argument("--sequence", type=str, help="Base WT sequence (overridden by --dms_index mapping if set)")
     parser.add_argument("--target_seq", type=str, default=None, help="Alias for --sequence when not using mapping")
     parser.add_argument("--dms-input", type=pathlib.Path, required=True, help="CSV file or folder (with mapping)")
     parser.add_argument("--dms-output", type=pathlib.Path, required=True, help="Output folder for scored CSV")
-    parser.add_argument(
-        "--mutation-col", type=str, default="mutant", help="Column with mutations like 'A42D' or 'A42D:R79G'"
-    )
-
-    # Mapping options (optional)
+    parser.add_argument("--mutation-col", type=str, default="mutant", help="Column with mutation strings")
     parser.add_argument(
         "--dms_index",
         type=str,
         nargs="+",
         default=None,
-        help="One or more indices of DMS in mapping file (e.g. --dms_index 0 1 2), or 'all' to run all assays.",
+        help="Indices of DMS in mapping file, or 'all'",
     )
     parser.add_argument("--dms_mapping", type=str, default=None, help="CSV with mapping rows when using --dms_index")
-
     parser.add_argument("--offset-idx", type=int, default=1, help="Offset of mutation positions in mutation column")
+    parser.add_argument(
+        "--bos-offset",
+        type=int,
+        choices=[0, 1],
+        default=1,
+        help=(
+            "Index offset to account for a leading BOS token and trailing EOS in tokenized inputs. "
+            "Use 1 when tokenizer adds BOS/EOS (default), 0 when no special tokens are added."
+        ),
+    )
     parser.add_argument(
         "--scoring-strategy",
         type=str,
@@ -126,31 +221,51 @@ def _load_hf_model_and_tokenizer(
     if auth_token == "":
         auth_token = None
     # AMPLIFY models on HF expose a compatible masked LM head for token-level scoring
+    kwargs = {"trust_remote_code": True}
     if revision is not None:
-        print(f"Loading model {model_name} revision {revision} on device {device}")
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            revision=revision,
-            token=auth_token,
-        )
-        model = AutoModel.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            revision=revision,
-            token=auth_token,
-        )
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            token=auth_token,
-        )
-        model = AutoModel.from_pretrained(
-            model_name,
-            trust_remote_code=True,
-            token=auth_token,
-        )
+        kwargs["revision"] = revision
+    if auth_token is not None:
+        kwargs["token"] = auth_token
+
+    print(f"Loading HF model {model_name} on device {device}")
+    tokenizer = AutoTokenizer.from_pretrained(model_name, **kwargs)
+    model = AutoModel.from_pretrained(model_name, **kwargs)
+    model.eval()
+    model.to(device)
+    return tokenizer, model
+
+
+def _load_local_amplify_model_and_tokenizer(
+    checkpoint_path: str,
+    config_path: str,
+    device: torch.device,
+):
+    """Load an AMPLIFY model/tokenizer from explicit local paths.
+
+    Args:
+        checkpoint_path: Path to a .pt checkpoint file.
+        config_path: Path to a Hydra config.yaml file.
+        device: torch device.
+    """
+    try:
+        from amplify.model import AMPLIFY  # type: ignore
+    except Exception as e:
+        raise ImportError(
+            "Could not import amplify.model.AMPLIFY. Ensure AMPLIFY is installed (pip install -e .) or on PYTHONPATH."
+        ) from e
+
+    if not os.path.isfile(checkpoint_path):
+        raise FileNotFoundError(f"Local AMPLIFY checkpoint (.pt) not found at: {checkpoint_path}")
+    if not checkpoint_path.endswith(".pt"):
+        raise ValueError(f"--local-checkpoint must point to a .pt file, got: {checkpoint_path}")
+    if not os.path.isfile(config_path):
+        raise FileNotFoundError(f"Local AMPLIFY config.yaml not found at: {config_path}")
+
+    print(f"Loading local AMPLIFY model from checkpoint {checkpoint_path} with config {config_path} on device {device}")
+    model, tokenizer = AMPLIFY.load(
+        checkpoint_path=checkpoint_path,
+        config_path=config_path,
+    )
     model.eval()
     model.to(device)
     return tokenizer, model
@@ -164,36 +279,43 @@ def _char_to_id(tokenizer, aa: str) -> int:
 
 
 def _tokenize_seq(tokenizer, seq: str, device: torch.device, add_special_tokens: bool = True):
-    inputs = tokenizer(seq, return_tensors="pt", add_special_tokens=add_special_tokens).to(device)
-    # AMPLIFY expects an additive attention mask: 0.0 for tokens to attend, -inf for masked/pad
-    if "attention_mask" in inputs:
-        am = inputs["attention_mask"]
-        # Ensure boolean condition then map True->0.0, False->-inf
-        inputs["attention_mask"] = torch.where(
-            am.bool(), torch.tensor(0.0, device=am.device), torch.tensor(float("-inf"), device=am.device)
-        )
-    return inputs
+    """Tokenize a single sequence. We only use input_ids and drop attention masks. Ensures batch dim."""
+    enc = tokenizer(seq, return_tensors="pt", add_special_tokens=add_special_tokens)
+    input_ids = enc["input_ids"].to(device)
+    # Be robust: ensure shape [B, T]
+    if input_ids.dim() == 1:
+        input_ids = input_ids.unsqueeze(0)
+    return {"input_ids": input_ids}
 
 
 # Removed special-token alignment; we assume a single BOS at index 0 and EOS at the end.
 
 
-def _log_softmax_logits(model, inputs) -> torch.Tensor:
+def _log_softmax_logits(model_wrapper: AmplifyForwardWrapper, inputs, autocast_dtype: str = "bf16") -> torch.Tensor:
     # Use autocast for computation (default bf16, fp16 if weights are fp16)
-    # Autocast dtype is now CLI specified
-    import builtins
-
     autocast_map = {"bf16": torch.bfloat16, "fp16": torch.float16, "fp32": torch.float32}
-    autocast_dtype = autocast_map.get(getattr(builtins, "autocast_dtype", "bf16"), torch.bfloat16)
+    autocast_t = autocast_map.get(autocast_dtype, torch.bfloat16)
     with torch.no_grad():
         device_type = "cuda" if torch.cuda.is_available() else "cpu"
-        with torch.autocast(device_type=device_type, dtype=autocast_dtype, enabled=True):
-            outputs = model(**inputs)
-            logits = outputs.logits  # [B, T, V]
+        with torch.autocast(device_type=device_type, dtype=autocast_t, enabled=True):
+            input_ids = inputs["input_ids"]
+            # Build per-batch position_ids to satisfy RoPE shape (B, T)
+            if input_ids.dim() == 1:
+                input_ids = input_ids.unsqueeze(0)
+            B, T = input_ids.shape[0], input_ids.shape[1]
+            pos = torch.arange(T, device=input_ids.device).unsqueeze(0).expand(B, T)
+            logits = model_wrapper.get_logits(input_ids, position_ids=pos)  # [B, T, V]
             return torch.log_softmax(logits, dim=-1)
 
 
-def _label_row_hf(row_mut_str: str, sequence: str, token_log_probs: torch.Tensor, tokenizer, offset_idx: int) -> float:
+def _label_row_hf(
+    row_mut_str: str,
+    sequence: str,
+    token_log_probs: torch.Tensor,
+    tokenizer,
+    offset_idx: int,
+    bos_offset: int,
+) -> float:
     # token_log_probs expected shape: [1, T, V] with special tokens at positions 0 and T-1
     score = 0.0
     for mutation in row_mut_str.split(":"):
@@ -201,16 +323,27 @@ def _label_row_hf(row_mut_str: str, sequence: str, token_log_probs: torch.Tensor
         assert sequence[idx] == wt, "The listed wildtype does not match the provided sequence"
         wt_id = _char_to_id(tokenizer, wt)
         mt_id = _char_to_id(tokenizer, mt)
-        # +1 for BOS (assumes single BOS and single EOS)
-        score += (token_log_probs[0, 1 + idx, mt_id] - token_log_probs[0, 1 + idx, wt_id]).item()
+        # Offset by BOS when present
+        score += (token_log_probs[0, bos_offset + idx, mt_id] - token_log_probs[0, bos_offset + idx, wt_id]).item()
     return float(score)
 
 
-def _compute_pseudo_ppl(seq: str, tokenizer, model, device: torch.device, dms_idx=None) -> float:
+def _compute_pseudo_ppl(
+    seq: str,
+    tokenizer,
+    model_wrapper: AmplifyForwardWrapper,
+    device: torch.device,
+    autocast_dtype: str = "bf16",
+    dms_idx=None,
+    bos_offset: int = 1,
+) -> float:
     # Sum of log p(x_i | x_\i) by masking one token at a time
-    max_len = getattr(model.config, "max_length", 2048)
-    # Reserve 2 for special tokens
-    window_cap = max_len - 2 if max_len and max_len > 2 else len(seq)
+    # Prefer model config if available, else tokenizer limit
+    max_len_cfg = getattr(getattr(model_wrapper, "model", None), "config", None)
+    max_len = getattr(max_len_cfg, "max_length", None) or getattr(tokenizer, "model_max_length", 2048) or 2048
+    # Reserve space for BOS/EOS when present
+    reserved_special = 2 * int(bos_offset == 1)
+    window_cap = max_len - reserved_special if max_len and max_len > reserved_special else len(seq)
 
     log_probs = []
     bar_desc = f"pppl DMS={dms_idx}" if dms_idx is not None else "pppl"
@@ -219,106 +352,116 @@ def _compute_pseudo_ppl(seq: str, tokenizer, model, device: torch.device, dms_id
             start, end = _window_bounds(pos, len(seq), window_cap)
             subseq = seq[start:end]
             local_pos = pos - start
-            inputs = _tokenize_seq(tokenizer, subseq, device)
-            # Mask position (accounting for BOS at index 0)
-            inputs["input_ids"][0, 1 + local_pos] = tokenizer.mask_token_id
+            inputs = _tokenize_seq(tokenizer, subseq, device, add_special_tokens=(bos_offset == 1))
+            # Mask position (offset for BOS if present)
+            inputs["input_ids"][0, bos_offset + local_pos] = tokenizer.mask_token_id
         else:
-            inputs = _tokenize_seq(tokenizer, seq, device)
-            inputs["input_ids"][0, 1 + pos] = tokenizer.mask_token_id
+            inputs = _tokenize_seq(tokenizer, seq, device, add_special_tokens=(bos_offset == 1))
+            inputs["input_ids"][0, bos_offset + pos] = tokenizer.mask_token_id
 
-        logp = _log_softmax_logits(model, inputs)
+        logp = _log_softmax_logits(model_wrapper, inputs, autocast_dtype=autocast_dtype)
         aa_id = _char_to_id(tokenizer, seq[pos])
         if window_cap < len(seq):
-            log_probs.append(logp[0, 1 + local_pos, aa_id].item())
+            log_probs.append(logp[0, bos_offset + local_pos, aa_id].item())
         else:
-            log_probs.append(logp[0, 1 + pos, aa_id].item())
+            log_probs.append(logp[0, bos_offset + pos, aa_id].item())
     return float(np.sum(log_probs))
 
 
 def _masked_marginals(
-    sequence: str, tokenizer, model, device: torch.device, scoring_window: str, dms_idx=None
+    sequence: str,
+    tokenizer,
+    model_wrapper: AmplifyForwardWrapper,
+    device: torch.device,
+    scoring_window: str,
+    batch_size: int = 16,
+    autocast_dtype: str = "bf16",
+    dms_idx=None,
+    bos_offset: int = 1,
 ) -> torch.Tensor:
     # For each position, mask it, run model, and collect the full vocab log-prob vector.
-    max_len = getattr(model.config, "max_length", 2048)
-    window_cap = max_len - 2 if max_len and max_len > 2 else len(sequence)
+    # Prefer model config if available, else tokenizer limit
+    _cfg = getattr(getattr(model_wrapper, "model", None), "config", None)
+    max_len = getattr(_cfg, "max_length", None) or getattr(tokenizer, "model_max_length", 2048) or 2048
+    reserved_special = 2 * int(bos_offset == 1)
+    window_cap = max_len - reserved_special if max_len and max_len > reserved_special else len(sequence)
     use_windows = scoring_window == "optimal" and window_cap < len(sequence)
-
     all_rows = []  # list of [V] tensors per position
     bar_desc = f"mm DMS={dms_idx}" if dms_idx is not None else "mm"
-    import builtins
-
-    batch_size = getattr(builtins, "batch_size", 16)
     positions = list(range(len(sequence)))
     for batch_start in tqdm(range(0, len(positions), batch_size), desc=bar_desc, disable=True):
         batch_positions = positions[batch_start : batch_start + batch_size]
         input_ids = []
-        attention_masks = []
         for pos in batch_positions:
             if use_windows:
                 start, end = _window_bounds(pos, len(sequence), window_cap)
                 subseq = sequence[start:end]
                 local_pos = pos - start
-                inputs = tokenizer(subseq, return_tensors="pt", add_special_tokens=True)
-                inputs = {k: v.to(device) for k, v in inputs.items()}
-                inputs["input_ids"][0, 1 + local_pos] = tokenizer.mask_token_id
-                input_ids.append(inputs["input_ids"][0])
-                attention_masks.append(inputs.get("attention_mask", None))
+                enc = tokenizer(subseq, return_tensors="pt", add_special_tokens=(bos_offset == 1))
+                ids = enc["input_ids"].to(device)
+                # Ensure ids has a batch dimension for consistent indexing
+                if ids.dim() == 1:
+                    ids = ids.unsqueeze(0)
+                ids[0, bos_offset + local_pos] = tokenizer.mask_token_id
+                input_ids.append(ids[0])
             else:
-                inputs = tokenizer(sequence, return_tensors="pt", add_special_tokens=True)
-                inputs = {k: v.to(device) for k, v in inputs.items()}
-                inputs["input_ids"][0, 1 + pos] = tokenizer.mask_token_id
-                input_ids.append(inputs["input_ids"][0])
-                attention_masks.append(inputs.get("attention_mask", None))
+                enc = tokenizer(sequence, return_tensors="pt", add_special_tokens=(bos_offset == 1))
+                ids = enc["input_ids"].to(device)
+                if ids.dim() == 1:
+                    ids = ids.unsqueeze(0)
+                ids[0, bos_offset + pos] = tokenizer.mask_token_id
+                input_ids.append(ids[0])
         # Stack batch
         input_ids = torch.stack(input_ids, dim=0)
-        batch_inputs = {"input_ids": input_ids, "attention_mask": None}
-        # if attention_masks[0] is not None:
-        #     batch_inputs["attention_mask"] = torch.stack(attention_masks, dim=0)
-        logp = _log_softmax_logits(model, batch_inputs)
+        batch_inputs = {"input_ids": input_ids}
+        logp = _log_softmax_logits(model_wrapper, batch_inputs, autocast_dtype=autocast_dtype)
         # logp shape: [batch, T, V]
         for i, pos in enumerate(batch_positions):
             if use_windows:
                 start, end = _window_bounds(pos, len(sequence), window_cap)
                 local_pos = pos - start
-                all_rows.append(logp[i, 1 + local_pos].detach().cpu())
+                all_rows.append(logp[i, bos_offset + local_pos].detach().cpu())
             else:
-                all_rows.append(logp[i, 1 + pos].detach().cpu())
-
-    # Shape [1, L+2, V] to keep +1 offset indexing
-    token_probs = torch.zeros((1, len(sequence) + 2, all_rows[0].size(-1)))
+                all_rows.append(logp[i, bos_offset + pos].detach().cpu())
+    # Shape [1, L + reserved_special, V]
+    token_probs = torch.zeros((1, len(sequence) + reserved_special, all_rows[0].size(-1)))
     for i, row in enumerate(all_rows):
-        token_probs[0, 1 + i] = row
+        token_probs[0, bos_offset + i] = row
     return token_probs
 
 
 def main(args):
-    # Set batch size globally for _masked_marginals
-    import builtins
-
-    builtins.batch_size = args.batch_size
-    # Set autocast dtype globally for _log_softmax_logits
-    import builtins
-
-    builtins.autocast_dtype = args.autocast_dtype
     if not os.path.exists(args.dms_output):
         os.mkdir(args.dms_output)
 
     # Resolve device
     device = _device(use_gpu=not args.nogpu)
 
-    # Load model(s) once
-    from transformers import logging as hf_logging
-
-    hf_logging.set_verbosity_error()  # keep output clean
-    tokenizers_models = []
-    dtype_map = {"fp32": torch.float32, "bf16": torch.bfloat16, "fp16": torch.float16}
-    model_dtype = dtype_map.get(args.model_dtype, torch.float32)
-    for model_name in args.model_name_or_path:
+    # Load single model once
+    if args.load_from == "local":
+        if not args.local_checkpoint or not args.local_config:
+            raise ValueError(
+                "For local loading, provide both --local-checkpoint (.pt) and --local-config (config.yaml)"
+            )
+        tokenizer, model = _load_local_amplify_model_and_tokenizer(
+            checkpoint_path=args.local_checkpoint, config_path=args.local_config, device=device
+        )
+        # Move to device only; avoid global dtype cast to prevent complex->real warnings
+        model.to(device)
+        model_wrapper = AmplifyForwardWrapper(model)
+        model_label = os.path.basename(args.local_checkpoint)
+    else:
+        # Use the first provided model if a list is passed
+        model_name = (
+            args.model_name_or_path[0] if isinstance(args.model_name_or_path, list) else args.model_name_or_path
+        )
         tokenizer, model = _load_hf_model_and_tokenizer(
             model_name, device, revision=args.revision, auth_token=args.use_auth_token
         )
-        model.to(device, dtype=model_dtype)
-        tokenizers_models.append((model_name, tokenizer, model))
+        # Move to device only; avoid global dtype cast to prevent complex->real warnings
+        model.to(device)
+        model_wrapper = AmplifyForwardWrapper(model)
+        model_label = model_name
 
     # Handle DMS indices (single, multiple, or 'all')
     if args.dms_index is None:
@@ -370,41 +513,69 @@ def main(args):
         if len(df) == 0:
             raise ValueError("No rows found in the dataframe")
 
-        # Score with each model and append columns
-        for model_name, tokenizer, model in tokenizers_models:
-            col_name = os.path.basename(model_name.rstrip("/"))
+        # Score with the single model and append column
+        col_name = os.path.basename(str(model_label).rstrip("/"))
 
-            # Skip if already computed and not overwriting
-            if os.path.exists(dms_output_file) and not args.overwrite_prior_scores:
-                prior_df = pd.read_csv(dms_output_file)
-                if col_name in prior_df.columns:
-                    df = prior_df
-                    print(f"Skipping {col_name} (already present). Use --overwrite-prior-scores to recompute.")
-                    continue
+        # Skip if already computed and not overwriting
+        if os.path.exists(dms_output_file) and not args.overwrite_prior_scores:
+            prior_df = pd.read_csv(dms_output_file)
+            if col_name in prior_df.columns:
+                df = prior_df
+                print(f"Skipping {col_name} (already present). Use --overwrite-prior-scores to recompute.")
+            else:
+                # Fall through to compute and merge below
+                pass
 
+        if col_name not in df.columns:
             if args.scoring_strategy == "wt-marginals":
-                inputs = _tokenize_seq(tokenizer, sequence, device)
-                max_len = getattr(model.config, "max_length", 2048)
+                raise NotImplementedError("Not sure of the implemenation here")
+                inputs = _tokenize_seq(tokenizer, sequence, device, add_special_tokens=(args.bos_offset == 1))
+                _cfg = getattr(getattr(model_wrapper, "model", None), "config", None)
+                max_len = getattr(_cfg, "max_length", None) or getattr(tokenizer, "model_max_length", 2048) or 2048
                 bar_desc = f"wtm DMS={dms_idx}" if dms_idx is not None else "wtm"
                 if inputs["input_ids"].shape[1] > max_len and args.scoring_window == "optimal":
                     token_probs = _masked_marginals(
-                        sequence, tokenizer, model, device, scoring_window="optimal", dms_idx=dms_idx
+                        sequence,
+                        tokenizer,
+                        model_wrapper,
+                        device,
+                        scoring_window="optimal",
+                        batch_size=args.batch_size,
+                        autocast_dtype=args.autocast_dtype,
+                        dms_idx=dms_idx,
+                        bos_offset=args.bos_offset,
                     )
                 else:
                     for pos in tqdm([0], desc=bar_desc):
-                        token_probs = _log_softmax_logits(model, inputs).detach().cpu()
+                        token_probs = (
+                            _log_softmax_logits(model_wrapper, inputs, autocast_dtype=args.autocast_dtype)
+                            .detach()
+                            .cpu()
+                        )
 
                 df[col_name] = df.apply(
-                    lambda row: _label_row_hf(row[mutant_col], sequence, token_probs, tokenizer, offset_idx),
+                    lambda row: _label_row_hf(
+                        row[mutant_col], sequence, token_probs, tokenizer, offset_idx, args.bos_offset
+                    ),
                     axis=1,
                 )
 
             elif args.scoring_strategy == "masked-marginals":
                 token_probs = _masked_marginals(
-                    sequence, tokenizer, model, device, args.scoring_window, dms_idx=dms_idx
+                    sequence,
+                    tokenizer,
+                    model_wrapper,
+                    device,
+                    args.scoring_window,
+                    batch_size=args.batch_size,
+                    autocast_dtype=args.autocast_dtype,
+                    dms_idx=dms_idx,
+                    bos_offset=args.bos_offset,
                 )
                 df[col_name] = df.apply(
-                    lambda row: _label_row_hf(row[mutant_col], sequence, token_probs, tokenizer, offset_idx),
+                    lambda row: _label_row_hf(
+                        row[mutant_col], sequence, token_probs, tokenizer, offset_idx, args.bos_offset
+                    ),
                     axis=1,
                 )
 
@@ -415,27 +586,27 @@ def main(args):
                         lambda row: _get_mutated_sequence(row[mutant_col], sequence, offset_idx), axis=1
                     )
                 df[col_name] = df.progress_apply(
-                    lambda row: _compute_pseudo_ppl(row["mutated_sequence"], tokenizer, model, device, dms_idx=dms_idx),
+                    lambda row: _compute_pseudo_ppl(
+                        row["mutated_sequence"],
+                        tokenizer,
+                        model_wrapper,
+                        device,
+                        autocast_dtype=args.autocast_dtype,
+                        dms_idx=dms_idx,
+                        bos_offset=args.bos_offset,
+                    ),
                     axis=1,
                 )
 
-            # Write out incrementally if prior file exists
-            if os.path.exists(dms_output_file) and not args.overwrite_prior_scores:
-                prior_df = pd.read_csv(dms_output_file)
-                assert col_name not in prior_df.columns, f"Column {col_name} already exists in {dms_output_file}"
+        # Write out incrementally if prior file exists
+        if os.path.exists(dms_output_file) and not args.overwrite_prior_scores:
+            prior_df = pd.read_csv(dms_output_file)
+            if col_name not in prior_df.columns:
                 prior_df = prior_df.merge(df[[col_name, mutant_col]], on=mutant_col)
-                prior_df.to_csv(dms_output_file, index=False)
-                df = prior_df
-            else:
-                df.to_csv(dms_output_file, index=False)
-
-        # If multiple models provided, add an ensemble average
-        if len(args.model_name_or_path) > 1:
-            names = [os.path.basename(m.rstrip("/")) for m in args.model_name_or_path]
-            present = [n for n in names if n in df.columns]
-            if present:
-                df["Ensemble_AMPLIFY"] = df[present].mean(axis=1)
-                df.to_csv(dms_output_file, index=False)
+            prior_df.to_csv(dms_output_file, index=False)
+            df = prior_df
+        else:
+            df.to_csv(dms_output_file, index=False)
 
 
 def _get_mutated_sequence(row: str, wt_sequence: str, offset_idx: int) -> str:

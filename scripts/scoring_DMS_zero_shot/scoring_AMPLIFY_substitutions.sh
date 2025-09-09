@@ -15,13 +15,13 @@ DATA_DIR="${SCRATCH_BASE}/data/DMS_ProteinGym_substitutions"
 # DMS_MAPPING="${SCRATCH_BASE}/data/DMS_substitutions.csv"
 DMS_MAPPING="${REPO_ROOT}/reference_files/DMS_substitutions.csv"
 
-OUT_DIR="${SCRATCH_BASE}/results/zero_shot_substitutions_scores/SaAMPLIFY/120M_hf_mm"
+OUT_DIR="${SCRATCH_BASE}/results/zero_shot_substitutions_scores/AMPLIFY/350Mbase_hf_mm"
 mkdir -p "${OUT_DIR}"
 
 # --- Model & scoring ---
-MODEL_NAME="davidhd/SaAMPLIFY_120M"   # HF hub model name for AMPLIFY 120M
+MODEL_NAME="chandar-lab/AMPLIFY_350M_base"   # HF hub model name for AMPLIFY 350M
 SCORING_STRATEGY="masked-marginals"
-HF_TOKEN="hf_your_token_here"  # Replace with your HF token with read access to davidhd/SaAMPLIFY_120M
+HF_TOKEN=""  # Replace with your HF token with read access to davidhd/SaAMPLIFY_350M
 
 PY_SCRIPT="${REPO_ROOT}/proteingym/baselines/amplify/compute_fitness_amplify.py"
 
@@ -38,6 +38,7 @@ python "${PY_SCRIPT}" \
   --dms-input "${DATA_DIR}" \
   --dms-output "${OUT_DIR}" \
   --scoring-strategy "${SCORING_STRATEGY}" \
-  --scoring-window "optimal"
+  --scoring-window "optimal" \
+  --overwrite-prior-scores
 
 echo "[$(date +'%F %T')] Done. Results in ${OUT_DIR}"
