@@ -15,13 +15,14 @@ DATA_DIR="${SCRATCH_BASE}/data/DMS_ProteinGym_substitutions"
 # DMS_MAPPING="${SCRATCH_BASE}/data/DMS_substitutions.csv"
 DMS_MAPPING="${REPO_ROOT}/reference_files/DMS_substitutions.csv"
 
-OUT_DIR="${SCRATCH_BASE}/results/zero_shot_substitutions_scores/AMPLIFY/350Mbase_hf_mm"
+# OUT_DIR="${SCRATCH_BASE}/results/zero_shot_substitutions_scores/AMPLIFY/120M_UR50"
+OUT_DIR="${SCRATCH_BASE}/results/zero_shot_substitutions_scores/AMPLIFY_2/350M_consensus/"
 mkdir -p "${OUT_DIR}"
 
 # --- Model & scoring ---
-MODEL_NAME="chandar-lab/AMPLIFY_350M_base"   # HF hub model name for AMPLIFY 350M
+MODEL_NAME="Lolalb/AMPLIFY_consensus"   # HF hub model name for AMPLIFY 120M (UR50)
 SCORING_STRATEGY="masked-marginals"
-HF_TOKEN=""  # Replace with your HF token with read access to davidhd/SaAMPLIFY_350M
+HF_TOKEN=your_token_here  # Replace with your HF token with read access to davidhd/SaAMPLIFY_350M
 
 PY_SCRIPT="${REPO_ROOT}/proteingym/baselines/amplify/compute_fitness_amplify.py"
 
@@ -39,6 +40,7 @@ python "${PY_SCRIPT}" \
   --dms-output "${OUT_DIR}" \
   --scoring-strategy "${SCORING_STRATEGY}" \
   --scoring-window "optimal" \
-  --overwrite-prior-scores
+  --overwrite-prior-scores \
+  --bos-offset 0 # ProSeQo models do not use a BOS token
 
 echo "[$(date +'%F %T')] Done. Results in ${OUT_DIR}"

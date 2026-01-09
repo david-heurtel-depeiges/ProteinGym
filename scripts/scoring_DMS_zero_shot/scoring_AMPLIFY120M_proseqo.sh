@@ -36,7 +36,7 @@ OUT_BASE="${SCRATCH_BASE}/results/zero_shot_substitutions_scores/AMPLIFY_2/120M/
 mkdir -p "$(dirname "${OUT_BASE}")"
 
 # --- Model source (local ablations) & scoring ---
-ABLATIONS_DIR="/network/scratch/l/lola.lebreton/proseqo/ablations/old"
+ABLATIONS_DIR="/network/projects/drugdiscovery/proseqo/ablations"
 SCORING_STRATEGY="masked-marginals"
 PY_SCRIPT="${REPO_ROOT}/proteingym/baselines/amplify/compute_fitness_amplify.py"
 
@@ -87,6 +87,39 @@ for MODEL_DIR in "${ABLATIONS_DIR}"/*/; do
     --scoring-window "optimal" \
     --overwrite-prior-scores \
     --bos-offset 0 # ProSeQo models do not use a BOS token
+
+  echo "[$(date +'%F %T')] Finished model='${MODEL_NAME}'. Results accumulated in ${OUT_DIR}"
+  count=$((count+1))
+done
+
+ONLINE_MODEL_LIST=(
+    "Lolalb/amplify_opt_0_05_350m"
+    "Lolalb/amplify_opt_0_05_120m_saved"
+    "Lolalb/cluster90_90_opt_0_05_120m"
+    "Lolalb/cluster70_90_opt_0_05_120m"
+    "Lolalb/cluster90_opt_0_05_120m"
+    "Lolalb/cluster_opt_0_05_120m"
+)
+
+AUTH_TOKEN=your_token_here  # Replace with your HF token with read access to Lolalb models
+
+for MODEL_NAME in "${ONLINE_MODEL_LIST[@]}"; do
+  OUT_DIR="${OUT_BASE}/${MODEL_NAME//\//_}"
+  mkdir -p "${OUT_DIR}"
+
+  echo "[$(date +'%F %T')] Running online model='${MODEL_NAME}' -> ${OUT_DIR}"
+
+  python "${PY_SCRIPT}" \
+    --model_name_or_path "${MODEL_NAME}" \
+    --use_auth_token "${AUTH_TOKEN}" \
+    --dms_index all \
+    --dms_mapping "${DMS_MAPPING}" \
+    --dms-input "${DATA_DIR}" \
+    --dms-output "${OUT_DIR}" \
+    --scoring-strategy "${SCORING_STRATEGY}" \
+    --scoring-window "optimal" \
+    --overwrite-prior-scores \
+    #--bos-offset 0 # ProSeQo models do not use a BOS token
 
   echo "[$(date +'%F %T')] Finished model='${MODEL_NAME}'. Results accumulated in ${OUT_DIR}"
   count=$((count+1))
