@@ -1,0 +1,543 @@
+{
+    "model_list_zero_shot_substitutions_DMS": {
+        "MILA_ALL_0.40": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.40",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.50": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.50",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.30": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.30",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.50_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.50_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.60": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.60",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.60_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.60_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.70": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.70",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.70_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.70_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.80": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.80",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.80_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.80_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_ALL_0.90": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_ALL_0.90",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.10": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.10",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.20": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.20",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.20_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.20_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.30": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.30",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.30_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.30_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.40": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.40",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.40_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.40_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.50": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.50",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.50_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.50_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.60": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.60",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.60_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.60_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.70": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.70",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.70_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.70_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.80": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.80",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.80_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.80_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_BFD_0.90": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_BFD_0.90",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.10": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.10",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.20": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.20",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.20_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.20_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.30": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.30",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.30_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.30_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.40": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.40",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.40_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.40_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.50": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.50",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.60": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.60",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.70": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.70",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.80": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.80",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_MGNIFY_0.90": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_MGNIFY_0.90",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.10_sub10": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.10_sub10",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.10_sub10_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.10_sub10_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.20_sub20": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.20_sub20",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.20_sub20_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.20_sub20_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.30_sub30_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.30_sub30_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.40_sub40_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.40_sub40_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.50_sub50": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.50_sub50",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_OPT_0.60_sub60": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_OPT_0.60_sub60",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.01": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.01",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.02": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.02",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.03": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.03",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.05": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.05",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.05_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.05_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.10": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.10",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.10_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.10_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.15": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.15",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.15_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.15_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.20": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.20",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.20_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.20_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.25": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.25",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.25_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.25_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.30": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.30",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.30_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.30_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.35": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.35",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.35_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.35_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.40": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.40",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.40_1m": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.40_1m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.50": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.50",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.60": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.60",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.65": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.65",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "MILA_U100_0.75": {
+            "input_score_name": "mp_rank_00_model_states.pt",
+            "location": "AMPLIFY_2/120M/MILA_U100_0.75",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_amplify_opt_0_05_350m": {
+            "input_score_name": "amplify_opt_0_05_350m",
+            "location": "AMPLIFY_2/120M/Lolalb_amplify_opt_0_05_350m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_amplify_opt_0_05_120m_saved": {
+            "input_score_name": "amplify_opt_0_05_120m_saved",
+            "location": "AMPLIFY_2/120M/Lolalb_amplify_opt_0_05_120m_saved",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_cluster90_90_opt_0_05_120m": {
+            "input_score_name": "cluster90_90_opt_0_05_120m",
+            "location": "AMPLIFY_2/120M/Lolalb_cluster90_90_opt_0_05_120m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_cluster70_90_opt_0_05_120m": {
+            "input_score_name": "cluster70_90_opt_0_05_120m",
+            "location": "AMPLIFY_2/120M/Lolalb_cluster70_90_opt_0_05_120m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_cluster90_opt_0_05_120m": {
+            "input_score_name": "cluster90_opt_0_05_120m",
+            "location": "AMPLIFY_2/120M/Lolalb_cluster90_opt_0_05_120m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_cluster_opt_0_05_120m": {
+            "input_score_name": "cluster_opt_0_05_120m",
+            "location": "AMPLIFY_2/120M/Lolalb_cluster_opt_0_05_120m",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        }
+    }
+}

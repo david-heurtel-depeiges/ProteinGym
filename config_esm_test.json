@@ -1,0 +1,11 @@
+{
+    "model_list_zero_shot_substitutions_DMS": {
+        "8M_hf_mm": {
+            "input_score_name": "esm2_t6_8M_UR50D",
+            "location": "ESM2/8M_hf_mm",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        }
+    }
+}

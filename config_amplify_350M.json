@@ -1,0 +1,25 @@
+{
+    "model_list_zero_shot_substitutions_DMS": {
+        "350M_consensus_extended": {
+            "input_score_name": "AMPLIFY_consensus_extended",
+            "location": "zero_shot_substitutions_scores/AMPLIFY_2/350M_consensus_extended",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "350M_consensus": {
+            "input_score_name": "AMPLIFY_consensus",
+            "location": "zero_shot_substitutions_scores/AMPLIFY_2/350M_consensus",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        },
+        "Lolalb_AMPLIFY_benchmark": {
+            "input_score_name": "AMPLIFY_benchmark",
+            "location": "zero_shot_substitutions_scores/AMPLIFY_2/Lolalb_AMPLIFY_benchmark",
+            "directionality": 1,
+            "key": "mutant",
+            "model_type": "Single sequence"
+        }
+    }
+}
